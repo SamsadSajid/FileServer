@@ -50,11 +50,12 @@ public class Controller {
             socket = new Socket("localhost", 5555);
             textAreaMsg.appendText("Connected to the Server!!!\n");
 
-            //bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             printWriter = new PrintWriter(socket.getOutputStream());
             printWriter.println(tStudentId.getText());
             printWriter.flush();
-            //textAreaMsg.appendText(bufferedReader.readLine());
+            String feed = bufferedReader.readLine();
+            //textAreaMsg.appendText(feed);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Problem in connecting with the server. Process Terminating... .... ....");

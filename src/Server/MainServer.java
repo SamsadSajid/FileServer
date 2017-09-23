@@ -2,10 +2,13 @@ package Server;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 public class MainServer {
     private static BufferedReader bufferedReader = null;
+    private static PrintWriter printWriter = null;
     private static int studentId;
+    private static ArrayList<Worker> db = new ArrayList<Worker>();
 
     public static void main(String args[])
     {
@@ -22,9 +25,17 @@ public class MainServer {
                 bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 studentId = Integer.valueOf(bufferedReader.readLine());
                 System.out.println(studentId);
-                Worker wt = new Worker(socket, studentId);
-                Thread t = new Thread(wt);
-                t.start();
+                if(db.contains(studentId) && db.contains(socket.getPort())) {
+                    Worker wt = new Worker(socket, studentId);
+                    db.add(wt);
+                    Thread t = new Thread(wt);
+                    t.start();
+                }
+                else{
+                    //printWriter.println("Access Denied to the Server. Connection Terminating... .... ....");
+                    //printWriter.flush();
+                    System.out.println("Access Denied to the Server. Connection Terminating... .... ....");
+                }
 //                WorkerCount++;
 //                System.out.println("Client [" + id + "] is now connected. No. of worker threads = " + WorkerCount);
 
