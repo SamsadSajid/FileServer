@@ -2,6 +2,7 @@ package Server;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Worker implements Runnable{
     private Socket socket;
@@ -9,8 +10,12 @@ public class Worker implements Runnable{
     private OutputStream os;
 
     private int studentId = 0;
+    private String fileName;
+    private long fileSize;
     private String ipAddress;
     private int port;
+    private static ArrayList<String> fileChunkList = new ArrayList<>();
+    private String fileDestination = "/home/saad/IdeaProjects/filehsharing/out/production/filehsharing";
 
     public Worker(Socket s, int id)
     {
@@ -41,78 +46,16 @@ public class Worker implements Runnable{
         printWriter.flush();
         System.out.println("Welcome " + this.studentId + " with IP Address " + this.ipAddress + " on Port " +this.port);
 
-//        String str;
-//
-//        while(true)
-//        {
-//            try
-//            {
-//                if( (str = br.readLine()) != null )
-//                {
-//                    if(str.equals("BYE"))
-//                    {
-//                        System.out.println("[" + id + "] says: BYE. Worker thread will terminate now.");
-//                        break; // terminate the loop; it will terminate the thread also
-//                    }
-//                    else if(str.equals("DL"))
-//                    {
-//                        try
-//                        {
-//                            File file = new File("capture.jpg");
-//                            FileInputStream fis = new FileInputStream(file);
-//                            BufferedInputStream bis = new BufferedInputStream(fis);
-//                            OutputStream os = socket.getOutputStream();
-//                            byte[] contents;
-//                            long fileLength = file.length();
-//                            pr.println(String.valueOf(fileLength));		//These two lines are used
-//                            pr.flush();									//to send the file size in bytes.
-//
-//                            long current = 0;
-//
-//                            long start = System.nanoTime();
-//                            while(current!=fileLength){
-//                                int size = 10000;
-//                                if(fileLength - current >= size)
-//                                    current += size;
-//                                else{
-//                                    size = (int)(fileLength - current);
-//                                    current = fileLength;
-//                                }
-//                                contents = new byte[size];
-//                                bis.read(contents, 0, size);
-//                                os.write(contents);
-//                                //System.out.println("Sending file ... "+(current*100)/fileLength+"% complete!");
-//                            }
-//                            os.flush();
-//                            System.out.println("File sent successfully!");
-//                        }
-//                        catch(Exception e)
-//                        {
-//                            System.err.println("Could not transfer file.");
-//                        }
-//                        pr.println("Downloaded.");
-//                        pr.flush();
-//
-//                    }
-//                    else
-//                    {
-//                        System.out.println("[" + id + "] says: " + str);
-//                        pr.println("Got it. You sent \"" + str + "\"");
-//                        pr.flush();
-//                    }
-//                }
-//                else
-//                {
-//                    System.out.println("[" + id + "] terminated connection. Worker thread will terminate now.");
-//                    break;
-//                }
-//            }
-//            catch(Exception e)
-//            {
-//                System.err.println("Problem in communicating with the client [" + id + "]. Terminating worker thread.");
-//                break;
-//            }
-//        }
+        try {
+            String elements;
+            while((elements = bufferedReader.readLine()) != null) {
+                fileChunkList.add(elements);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        saveFile(fileChunkList);
 
         try
         {
@@ -122,11 +65,76 @@ public class Worker implements Runnable{
         }
         catch(Exception e)
         {
-
+            e.printStackTrace();
         }
 
 //        MainServer.workerThreadCount--;
 //        System.out.println("Client [" + id + "] is now terminating. No. of worker threads = "
 //                + MainServer.workerThreadCount);
+    }
+
+    private void saveFile(ArrayList<String> fileChunkList) {
+        File[] file = new File[fileChunkList.size()];
+        byte AllContents[] = null;
+        
+        int FILE_NUMBER = fileChunkList.size();
+        int FILE_LENGTH = 0;
+        int CURRENT_LENGTH=0;
+        int TOTAL_FILE_SIZE = 0;
+
+        for ( int i=0; i<FILE_NUMBER; i++)
+        {
+            file[i] = new File (fileChunkList.get(i));
+            TOTAL_FILE_SIZE+=file[i].length();
+        }
+
+        try {
+            InputStream inputStream = null;
+            AllContents= new byte[TOTAL_FILE_SIZE]; // Length of All Files, Total Size
+            
+            for ( int num=0;num<FILE_NUMBER; num++)
+            {
+                inputStream = new BufferedInputStream ( new FileInputStream( file[num] ));
+                FILE_LENGTH = (int) file[num].length();
+                inputStream.read(AllContents, CURRENT_LENGTH, FILE_LENGTH);
+                CURRENT_LENGTH+=FILE_LENGTH;
+                inputStream.close();
+            }
+
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("File not found " + e);
+        }
+        catch (IOException ioe)
+        {
+            System.out.println("Exception while reading the file " + ioe);
+        }
+        finally
+        {
+            write (AllContents, fileDestination);
+        }
+
+        System.out.println("Merge was executed successfully.!");
+    }
+
+    private void write(byte[] allContents, String fileDestination) {
+        try {
+            OutputStream outputStream = null;
+            try {
+                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination));
+                outputStream.write(allContents);
+                System.out.println("Writing Process Was Performed");
+            }
+            finally {
+                outputStream.close();
+            }
+        }
+        catch(FileNotFoundException ex){
+            ex.printStackTrace();
+        }
+        catch(IOException ex){
+            ex.printStackTrace();
+        }
     }
 }

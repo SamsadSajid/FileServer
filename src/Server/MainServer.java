@@ -25,17 +25,12 @@ public class MainServer {
                 bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 studentId = Integer.valueOf(bufferedReader.readLine());
                 System.out.println(studentId);
-                if(db.contains(studentId) && db.contains(socket.getPort())) {
                     Worker wt = new Worker(socket, studentId);
                     db.add(wt);
                     Thread t = new Thread(wt);
                     t.start();
-                }
-                else{
                     //printWriter.println("Access Denied to the Server. Connection Terminating... .... ....");
                     //printWriter.flush();
-                    System.out.println("Access Denied to the Server. Connection Terminating... .... ....");
-                }
 //                WorkerCount++;
 //                System.out.println("Client [" + id + "] is now connected. No. of worker threads = " + WorkerCount);
 
