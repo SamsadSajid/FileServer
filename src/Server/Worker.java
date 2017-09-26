@@ -15,7 +15,10 @@ public class Worker implements Runnable{
     private String ipAddress;
     private int port;
     private static ArrayList<String> fileChunkList = new ArrayList<>();
-    private String fileDestination = "/home/saad/IdeaProjects/filehsharing/out/production/filehsharing";
+    private String fileDestination = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server";
+    private int chunkSize;
+    private String fileChunkName;
+    private int totalBytesRead = 0;
 
     public Worker(Socket s, int id)
     {
@@ -46,16 +49,36 @@ public class Worker implements Runnable{
         printWriter.flush();
         System.out.println("Welcome " + this.studentId + " with IP Address " + this.ipAddress + " on Port " +this.port);
 
+        //mergeFile(fileChunkList);
+
+
+
         try {
-            String elements;
-            while((elements = bufferedReader.readLine()) != null) {
-                fileChunkList.add(elements);
+            fileName = bufferedReader.readLine();
+            fileSize = Integer.valueOf(bufferedReader.readLine());
+            System.out.println("File name received "+fileName+" file size "+fileSize);
+            while (totalBytesRead < fileSize) {
+                chunkSize = Integer.valueOf(bufferedReader.readLine());
+                System.out.println(chunkSize);
+                fileChunkName = bufferedReader.readLine();
+                System.out.println("Size " + chunkSize + " name " + fileChunkName);
+                fileChunkList.add(fileChunkName);
+                System.out.println("call hoise");
+                receiveFile(chunkSize, fileChunkName);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        saveFile(fileChunkList);
+
+//        try {
+//            String elements;
+//            while((elements = bufferedReader.readLine()) != null) {
+//                fileChunkList.add(elements);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         try
         {
@@ -73,7 +96,45 @@ public class Worker implements Runnable{
 //                + MainServer.workerThreadCount);
     }
 
-    private void saveFile(ArrayList<String> fileChunkList) {
+    private void receiveFile(int chunkSize, String fileChunkName) throws IOException {
+        System.out.println("1");
+        int bytesRead;
+        System.out.println("2");
+        byte[] storage = new byte[chunkSize];
+        System.out.println("3");
+        bytesRead = is.read(storage);
+        for(int i=0; i<storage.length; i++){
+            System.out.println(storage[i]);
+        }
+        System.out.println("File received "+bytesRead);
+        totalBytesRead+=bytesRead;
+        System.out.println("So far read " + totalBytesRead);
+        write(storage, fileChunkName);
+        storage = null;
+    }
+
+    private void write(byte[] allContents, String fileChunkName) {
+        try {
+            OutputStream outputStream = null;
+            try {
+                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileChunkName));
+                outputStream.write(allContents);
+                System.out.println("Writing Process Was Performed");
+            }
+            finally {
+                outputStream.close();
+            }
+        }
+        catch(FileNotFoundException ex){
+            ex.printStackTrace();
+        }
+        catch(IOException ex){
+            ex.printStackTrace();
+        }
+    }
+
+
+    private void mergeFile(ArrayList<String> fileChunkList) {
         File[] file = new File[fileChunkList.size()];
         byte AllContents[] = null;
         
@@ -118,23 +179,4 @@ public class Worker implements Runnable{
         System.out.println("Merge was executed successfully.!");
     }
 
-    private void write(byte[] allContents, String fileDestination) {
-        try {
-            OutputStream outputStream = null;
-            try {
-                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination));
-                outputStream.write(allContents);
-                System.out.println("Writing Process Was Performed");
-            }
-            finally {
-                outputStream.close();
-            }
-        }
-        catch(FileNotFoundException ex){
-            ex.printStackTrace();
-        }
-        catch(IOException ex){
-            ex.printStackTrace();
-        }
-    }
 }

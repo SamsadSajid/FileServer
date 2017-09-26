@@ -30,6 +30,8 @@ public class Controller {
     private static BufferedReader bufferedReader = null;
     private static PrintWriter printWriter = null;
 
+    private static String storageFolder = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server";
+
     @FXML
     public void initialize() throws IOException {
         textAreaMsg.setEditable(false);
@@ -72,26 +74,35 @@ public class Controller {
     public void SendOnClickListener(ActionEvent actionEvent) throws IOException {
         String fileName = tFileName.getText();
         long fileSize = Long.valueOf(tFileSize.getText());
+        printWriter = new PrintWriter(socket.getOutputStream());
+        printWriter.println(fileName);
+        printWriter.println(fileSize);
+        printWriter.flush();
         long chunkSize = 100; //will come from server
         sendFile(fileName, fileSize, chunkSize);
     }
 
     private void sendFile(String file, long fileSize, long chunkSize) throws IOException {
         InputStream inputStream = null;
+        OutputStream outputStream = socket.getOutputStream();
         FileInputStream fileInputStream = new FileInputStream(file);
         inputStream = new  BufferedInputStream(fileInputStream);
+        printWriter = new PrintWriter(socket.getOutputStream());
         byte [] storage = null;
         int numberOfChunks = 0;
         long totalBytesRead = 0;
         ArrayList<String> fileChunkList = new ArrayList<>();
 
         while(totalBytesRead < fileSize){
-            String fileChunkName ="metadata"+numberOfChunks+".bin";
+            String fileChunkName ="metadata_"+numberOfChunks+".bin";
             long bytesRemaining = fileSize - totalBytesRead;
             if ( bytesRemaining < chunkSize ){
                 chunkSize = bytesRemaining;
             }
             storage = new byte[(int) chunkSize]; //Temporary Byte Array
+            printWriter.println(chunkSize);
+            printWriter.println(fileChunkName);
+            printWriter.flush();
             int bytesRead = inputStream.read(storage, 0, (int)chunkSize);
 
             if ( bytesRead > 0) // If bytes read is not empty
@@ -100,24 +111,31 @@ public class Controller {
                 numberOfChunks++;
             }
 
-            writeToServer(storage, "/home/saad/IdeaProjects/filehsharing/out/production/filehsharing"+fileChunkName);
-            fileChunkList.add("/home/saad/IdeaProjects/filehsharing/out/production/filehsharing"+fileChunkName);
+            //printWriter.println(numberOfChunks);
+            //printWriter.flush();
+
+            outputStream.write(storage);
+
+            for(int i=0; i<storage.length; i++) {
+                System.out.println(storage[i]);
+            }
+
+                //writeToServer(storage, "/home/saad/IdeaProjects/filehsharing/out/production/filehsharing"+fileChunkName);
+            fileChunkList.add(storageFolder+fileChunkName);
             System.out.println("Total Bytes Read: "+totalBytesRead);
         }
+        outputStream.flush();
 
         //fileChunkList might return to somebody???
-        printWriter = new PrintWriter(socket.getOutputStream());
-        printWriter.println(fileChunkList);
-        printWriter.flush();
 
     }
     
-    public void writeToServer(byte[] fileStorage, String Destination) throws IOException {
-        OutputStream outputStream = null;
-        outputStream = new BufferedOutputStream(new FileOutputStream(Destination));
-        outputStream.write(fileStorage);
-        System.out.println("Writing Process Was Performed");
-        textAreaMsg.appendText("File has been sent to server\n");
-        outputStream.close();
-    }
+//    public void writeToServer(byte[] fileStorage, String Destination) throws IOException {
+//        OutputStream outputStream = null;
+//        outputStream = new BufferedOutputStream(new FileOutputStream(Destination));
+//        outputStream.write(fileStorage);
+//        System.out.println("Writing Process Was Performed");
+//        textAreaMsg.appendText("File has been sent to server\n");
+//        outputStream.close();
+//    }
 }
