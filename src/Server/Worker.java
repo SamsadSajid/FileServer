@@ -3,6 +3,8 @@ package Server;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Worker implements Runnable{
     private Socket socket;
@@ -10,6 +12,7 @@ public class Worker implements Runnable{
     private OutputStream os;
 
     private int studentId = 0;
+    private int receiverId;
     private String fileName;
     private long fileSize;
     private String ipAddress;
@@ -20,7 +23,9 @@ public class Worker implements Runnable{
     private String fileChunkName;
     private int totalBytesRead = 0;
 
-    public Worker(Socket s, int id)
+    private static Map<Integer, NetworkAddress> mapLog = new HashMap<Integer, NetworkAddress>();
+
+    public Worker(Socket s, int id, Map<Integer, NetworkAddress> map)
     {
         this.socket = s;
 
@@ -28,6 +33,18 @@ public class Worker implements Runnable{
         {
             this.is = this.socket.getInputStream();
             this.os = this.socket.getOutputStream();
+            this.studentId = id;
+            this.ipAddress = s.getInetAddress().toString();
+            this.port = s.getPort();
+
+            mapLog.putAll(map);
+
+            for (Map.Entry<Integer, NetworkAddress> entry : mapLog.entrySet()) {
+                System.out.println("ready");
+                int key = entry.getKey();
+                NetworkAddress studnetworkaddress = entry.getValue();
+                System.out.println("Id " + key + " in map with ip " + studnetworkaddress.ipAddress + " , port " + studnetworkaddress.port);
+            }
         }
         catch(Exception e)
         {
@@ -35,9 +52,7 @@ public class Worker implements Runnable{
             //System.err.println("Sorry. Cannot manage client [" + id + "] properly.");
         }
 
-        this.studentId = id;
-        this.ipAddress = s.getInetAddress().toString();
-        this.port = s.getPort();
+
     }
 
     public void run()
@@ -54,11 +69,21 @@ public class Worker implements Runnable{
 
 
         try {
+            receiverId = Integer.valueOf(bufferedReader.readLine());
+            if (!(mapLog.containsKey(receiverId))){
+                System.out.println("Receiver is offline");
+                String response = "offline";
+                printWriter.println(response);
+                printWriter.flush();
+            }
             fileName = bufferedReader.readLine();
             fileSize = Integer.valueOf(bufferedReader.readLine());
             System.out.println("File name received "+fileName+" file size "+fileSize);
             while (totalBytesRead < fileSize) {
-                chunkSize = Integer.valueOf(bufferedReader.readLine());
+                String ss = bufferedReader.readLine();
+                ss = ss.replaceAll("\\D+","");
+                System.out.println("Buffer reader in string after taking only int "+ss);
+                chunkSize = Integer.valueOf(ss);
                 System.out.println(chunkSize);
                 fileChunkName = bufferedReader.readLine();
                 System.out.println("Size " + chunkSize + " name " + fileChunkName);
@@ -80,16 +105,16 @@ public class Worker implements Runnable{
 //            e.printStackTrace();
 //        }
 
-        try
-        {
-            this.is.close();
-            this.os.close();
-            this.socket.close();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
+//        try
+//        {
+//            this.is.close();
+//            this.os.close();
+//            this.socket.close();
+//        }
+//        catch(Exception e)
+//        {
+//            e.printStackTrace();
+//        }
 
 //        MainServer.workerThreadCount--;
 //        System.out.println("Client [" + id + "] is now terminating. No. of worker threads = "
@@ -110,7 +135,7 @@ public class Worker implements Runnable{
         totalBytesRead+=bytesRead;
         System.out.println("So far read " + totalBytesRead);
         write(storage, fileChunkName);
-        storage = null;
+        //storage = null;
     }
 
     private void write(byte[] allContents, String fileChunkName) {
@@ -122,6 +147,7 @@ public class Worker implements Runnable{
                 System.out.println("Writing Process Was Performed");
             }
             finally {
+                outputStream.flush();
                 outputStream.close();
             }
         }
