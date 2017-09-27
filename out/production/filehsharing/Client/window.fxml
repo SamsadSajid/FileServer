@@ -16,7 +16,7 @@
       <TextField fx:id="tFileName" layoutX="220.0" layoutY="327.0" />
       <TextField fx:id="tFileSize" layoutX="220.0" layoutY="369.0" />
       <Label fx:id="lStudentId" layoutX="125.0" layoutY="288.0" text="Student Id" />
-      <Label fx:id="lFileName" layoutX="126.0" layoutY="331.0" text="FIle Name" />
+      <Label fx:id="lFileName" layoutX="126.0" layoutY="331.0" text="File Name" />
       <Label fx:id="lFileSize" layoutX="131.0" layoutY="373.0" text="File Size" />
       <Button fx:id="bLogIn" layoutX="458.0" layoutY="283.0" mnemonicParsing="false" onAction="#LogInOnClickListener" text="Log In" />
       <Button fx:id="bSend" layoutX="458.0" layoutY="369.0" mnemonicParsing="false" onAction="#SendOnClickListener" text="Send" />

@@ -30,7 +30,7 @@ public class Controller {
     private static BufferedReader bufferedReader = null;
     private static PrintWriter printWriter = null;
 
-    private static String storageFolder = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server";
+    private static String storageFolder = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server\\";
 
 
     @FXML
@@ -83,13 +83,18 @@ public class Controller {
         String fileName = tFileName.getText();
         long fileSize = Long.valueOf(tFileSize.getText());
         int receiverId = Integer.valueOf(tStudentId.getText());
+        //System.out.println("baal1");
         printWriter = new PrintWriter(socket.getOutputStream());
         printWriter.println(receiverId);
         printWriter.println(fileName);
         printWriter.println(fileSize);
+        //System.out.println("baal2");
         printWriter.flush();
         long chunkSize = 100; //will come from server
+        //System.out.println("baal3");
         String feed = bufferedReader.readLine();
+        System.out.println(feed);
+        //System.out.println("baal4");
         if (feed.contains("offline")){
             textAreaMsg.appendText("Receiver is currently offline. Please try again later\n");
             tStudentId.clear();
@@ -97,6 +102,7 @@ public class Controller {
             tFileSize.clear();
         }
         else {
+            //System.out.println("baal");
             sendFile(fileName, fileSize, chunkSize);
         }
     }
@@ -122,6 +128,7 @@ public class Controller {
             printWriter.println(chunkSize);
             printWriter.println(fileChunkName);
             printWriter.flush();
+            System.out.println("baal");
             int bytesRead = inputStream.read(storage, 0, (int)chunkSize);
             System.out.println("bytesRead "+bytesRead);
             if ( bytesRead > 0) // If bytes read is not empty
@@ -143,10 +150,23 @@ public class Controller {
 //          writeToServer(storage, "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Client"+fileChunkName);
             fileChunkList.add(storageFolder+fileChunkName);
             System.out.println("Total Bytes Read: "+totalBytesRead);
+            String serverFeed = bufferedReader.readLine();
+            System.out.println("Acknowledgement: "+serverFeed);
+            if (!(serverFeed.contains("Writing Process Was Performed"))){
+                textAreaMsg.appendText("Error occurred while transferring file. Process is being terminated. Please try again\n");
+            }
+            else{
+                textAreaMsg.appendText("Transmitting File... .... .... .... ....\n ");
+            }
+        }
+        for(int i=0; i<fileChunkList.size();i++){
+            System.out.println(fileChunkList.get(i));
         }
         outputStream.flush();
 
         //fileChunkList might return to somebody???
+        printWriter.println("File sent successfully");
+        printWriter.flush();
 
     }
 

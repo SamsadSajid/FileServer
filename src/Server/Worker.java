@@ -18,7 +18,7 @@ public class Worker implements Runnable{
     private String ipAddress;
     private int port;
     private static ArrayList<String> fileChunkList = new ArrayList<>();
-    private String fileDestination = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server";
+    private String fileDestination = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server\\";
     private int chunkSize;
     private String fileChunkName;
     private int totalBytesRead = 0;
@@ -76,20 +76,32 @@ public class Worker implements Runnable{
                 printWriter.println(response);
                 printWriter.flush();
             }
-            fileName = bufferedReader.readLine();
-            fileSize = Integer.valueOf(bufferedReader.readLine());
-            System.out.println("File name received "+fileName+" file size "+fileSize);
-            while (totalBytesRead < fileSize) {
-                String ss = bufferedReader.readLine();
-                ss = ss.replaceAll("\\D+","");
-                System.out.println("Buffer reader in string after taking only int "+ss);
-                chunkSize = Integer.valueOf(ss);
-                System.out.println(chunkSize);
-                fileChunkName = bufferedReader.readLine();
-                System.out.println("Size " + chunkSize + " name " + fileChunkName);
-                fileChunkList.add(fileChunkName);
-                System.out.println("call hoise");
-                receiveFile(chunkSize, fileChunkName);
+            else {
+                String response = "online";
+                printWriter.println(response);
+                printWriter.flush();
+                fileName = bufferedReader.readLine();
+                fileSize = Integer.valueOf(bufferedReader.readLine());
+                System.out.println("File name received " + fileName + " file size " + fileSize);
+                int p=0;
+                while (totalBytesRead < fileSize) {
+                    String ss = bufferedReader.readLine();
+                    ss = ss.replaceAll("\\D+", "");
+                    System.out.println("Buffer reader in string after taking only int " + ss);
+                    chunkSize = Integer.valueOf(ss);
+                    System.out.println(chunkSize);
+                    fileChunkName = bufferedReader.readLine();
+                    System.out.println("Size " + chunkSize + " name " + fileChunkName);
+                    fileChunkList.add(fileDestination+fileChunkName);
+                    System.out.println(fileChunkList.get(p));
+                    System.out.println("call hoise");
+                    receiveFile(chunkSize, fileChunkName);
+                    p++;
+                }
+                response = bufferedReader.readLine();
+                if (response.contains("File sent successfully")){
+                    mergeFile(fileChunkList);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -141,10 +153,14 @@ public class Worker implements Runnable{
     private void write(byte[] allContents, String fileChunkName) {
         try {
             OutputStream outputStream = null;
+            PrintWriter printWriter = new PrintWriter(this.os);
             try {
                 outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileChunkName));
                 outputStream.write(allContents);
                 System.out.println("Writing Process Was Performed");
+                printWriter.println("Writing Process Was Performed");
+                printWriter.flush();
+                //printWriter.close();
             }
             finally {
                 outputStream.flush();
