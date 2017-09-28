@@ -88,6 +88,7 @@ public class Worker implements Runnable{
                 int p=0;
                 while (totalBytesRead < fileSize) {
                     String ss = bufferedReader.readLine();
+                    System.out.println("fucking reader "+ss);
                     ss = ss.replaceAll("\\D+", "");
                     System.out.println("Buffer reader in string after taking only int " + ss);
                     chunkSize = Integer.valueOf(ss);
@@ -147,7 +148,8 @@ public class Worker implements Runnable{
         System.out.println("2");
         byte[] storage = new byte[chunkSize];
         System.out.println("3");
-        bytesRead = is.read(storage);
+        InputStream inputStream = new BufferedInputStream(new FileInputStream(fileName));
+        bytesRead = inputStream.read(storage, 0, chunkSize);
         for(int i=0; i<storage.length; i++){
             System.out.println(storage[i]);
         }
@@ -173,7 +175,7 @@ public class Worker implements Runnable{
             }
             finally {
                 outputStream.flush();
-                outputStream.close();
+                //outputStream.close();
             }
         }
         catch(FileNotFoundException ex){

@@ -125,7 +125,10 @@ public class Controller {
                 chunkSize = bytesRemaining;
             }
             storage = new byte[(int) chunkSize]; //Temporary Byte Array
+            System.out.println("From Client, chunk size "+chunkSize+" chunk name "+fileChunkName);
+            printWriter.flush();
             printWriter.println(chunkSize);
+            printWriter.flush();
             printWriter.println(fileChunkName);
             printWriter.flush();
             System.out.println("baal");
@@ -135,6 +138,7 @@ public class Controller {
             {
                 totalBytesRead += bytesRead;
                 numberOfChunks++;
+                System.out.println("Number of Chunks "+numberOfChunks);
             }
 
             //printWriter.println(numberOfChunks);
@@ -156,6 +160,7 @@ public class Controller {
                 textAreaMsg.appendText("Error occurred while transferring file. Process is being terminated. Please try again\n");
             }
             else{
+                System.out.println("Transmitting File... .... .... .... ....");
                 textAreaMsg.appendText("Transmitting File... .... .... .... ....\n ");
             }
         }
