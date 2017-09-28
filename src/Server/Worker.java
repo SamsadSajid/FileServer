@@ -15,6 +15,7 @@ public class Worker implements Runnable{
     private int receiverId;
     private String fileName;
     private long fileSize;
+    private String fileId;
     private String ipAddress;
     private int port;
     private static ArrayList<String> fileChunkList = new ArrayList<>();
@@ -82,6 +83,7 @@ public class Worker implements Runnable{
                 printWriter.flush();
                 fileName = bufferedReader.readLine();
                 fileSize = Integer.valueOf(bufferedReader.readLine());
+                fileId = generateFileId(fileName, studentId, receiverId);
                 System.out.println("File name received " + fileName + " file size " + fileSize);
                 int p=0;
                 while (totalBytesRead < fileSize) {
@@ -95,12 +97,12 @@ public class Worker implements Runnable{
                     fileChunkList.add(fileDestination+fileChunkName);
                     System.out.println(fileChunkList.get(p));
                     System.out.println("call hoise");
-                    receiveFile(chunkSize, fileChunkName);
+                    receiveFile(fileId, chunkSize, fileChunkName);
                     p++;
                 }
                 response = bufferedReader.readLine();
                 if (response.contains("File sent successfully")){
-                    mergeFile(fileChunkList);
+                    mergeFile(fileChunkList, fileId);
                 }
             }
         } catch (IOException e) {
@@ -133,7 +135,13 @@ public class Worker implements Runnable{
 //                + MainServer.workerThreadCount);
     }
 
-    private void receiveFile(int chunkSize, String fileChunkName) throws IOException {
+    private String generateFileId(String fileName, int studentId, int receiverId) {
+        String setter = String.valueOf(studentId);
+        String getter = String.valueOf(receiverId);
+        return setter+"-"+getter+"_"+fileName;
+    }
+
+    private void receiveFile(String fileId, int chunkSize, String fileChunkName) throws IOException {
         System.out.println("1");
         int bytesRead;
         System.out.println("2");
@@ -146,16 +154,17 @@ public class Worker implements Runnable{
         System.out.println("File received "+bytesRead);
         totalBytesRead+=bytesRead;
         System.out.println("So far read " + totalBytesRead);
-        write(storage, fileChunkName);
+        write(fileId, storage, fileChunkName);
         //storage = null;
     }
 
-    private void write(byte[] allContents, String fileChunkName) {
+    private void write(String fileId, byte[] allContents, String fileChunkName) {
         try {
             OutputStream outputStream = null;
             PrintWriter printWriter = new PrintWriter(this.os);
             try {
-                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileChunkName));
+                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileId + "_" + fileChunkName));
+                //1-2_datapath.pptx_metadata_0.bin
                 outputStream.write(allContents);
                 System.out.println("Writing Process Was Performed");
                 printWriter.println("Writing Process Was Performed");
@@ -176,7 +185,7 @@ public class Worker implements Runnable{
     }
 
 
-    private void mergeFile(ArrayList<String> fileChunkList) {
+    private void mergeFile(ArrayList<String> fileChunkList, String fileId) {
         File[] file = new File[fileChunkList.size()];
         byte AllContents[] = null;
         
@@ -215,10 +224,31 @@ public class Worker implements Runnable{
         }
         finally
         {
-            write (AllContents, fileDestination);
+            writeFullFile (fileId, AllContents, fileDestination);
         }
 
         System.out.println("Merge was executed successfully.!");
+    }
+
+    private void writeFullFile(String fileId, byte[] allContents, String fileDestination){
+        try {
+            OutputStream outputStream = null;
+            try {
+                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileId ));
+                outputStream.write(allContents);
+                System.out.println("Writing Process Was Performed");
+            }
+            finally {
+                outputStream.flush();
+                outputStream.close();
+            }
+        }
+        catch(FileNotFoundException ex){
+            ex.printStackTrace();
+        }
+        catch(IOException ex){
+            ex.printStackTrace();
+        }
     }
 
 }
