@@ -28,7 +28,7 @@ public class Controller {
 
     private static Socket socket = null;
     private static BufferedReader bufferedReader = null;
-    private static PrintWriter printWriter = null;
+    private static PrintWriter printWriter ;
 
     private static String storageFolder = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server\\";
 
@@ -81,20 +81,20 @@ public class Controller {
 
     public void SendOnClickListener(ActionEvent actionEvent) throws IOException {
         String fileName = tFileName.getText();
-        long fileSize = Long.valueOf(tFileSize.getText());
+        int fileSize = Integer.valueOf(tFileSize.getText());
         int receiverId = Integer.valueOf(tStudentId.getText());
-        //System.out.println("baal1");
-        printWriter = new PrintWriter(socket.getOutputStream());
+        //System.out.println("1");
+        //printWriter = new PrintWriter(socket.getOutputStream());
         printWriter.println(receiverId);
         printWriter.println(fileName);
         printWriter.println(fileSize);
-        //System.out.println("baal2");
+        //System.out.println("2");
         printWriter.flush();
-        long chunkSize = 100; //will come from server
-        //System.out.println("baal3");
+        int chunkSize = 100; //will come from server
+        //System.out.println("3");
         String feed = bufferedReader.readLine();
         System.out.println(feed);
-        //System.out.println("baal4");
+        //System.out.println("4");
         if (feed.contains("offline")){
             textAreaMsg.appendText("Receiver is currently offline. Please try again later\n");
             tStudentId.clear();
@@ -107,32 +107,33 @@ public class Controller {
         }
     }
 
-    private void sendFile(String file, long fileSize, long chunkSize) throws IOException {
-        InputStream inputStream = null;
+    private void sendFile(String file, int fileSize, int chunkSize) throws IOException {
+        //InputStream inputStream = null;
         OutputStream outputStream = socket.getOutputStream();
         FileInputStream fileInputStream = new FileInputStream(file);
-        inputStream = new  BufferedInputStream(fileInputStream);
-        printWriter = new PrintWriter(socket.getOutputStream());
+        BufferedInputStream inputStream = new  BufferedInputStream(fileInputStream);
+        //printWriter = new PrintWriter(socket.getOutputStream());
         byte [] storage = null;
         int numberOfChunks = 0;
-        long totalBytesRead = 0;
+        int totalBytesRead = 0;
         ArrayList<String> fileChunkList = new ArrayList<>();
 
         while(totalBytesRead < fileSize){
             String fileChunkName ="metadata_"+numberOfChunks+".bin";
-            long bytesRemaining = fileSize - totalBytesRead;
+            int bytesRemaining = fileSize - totalBytesRead;
             if ( bytesRemaining < chunkSize ){
                 chunkSize = bytesRemaining;
             }
-            storage = new byte[(int) chunkSize]; //Temporary Byte Array
+            storage = new byte[chunkSize]; //Temporary Byte Array
             System.out.println("From Client, chunk size "+chunkSize+" chunk name "+fileChunkName);
-            printWriter.flush();
+            //printWriter.flush();
             printWriter.println(chunkSize);
-            printWriter.flush();
+            //printWriter.flush();
             printWriter.println(fileChunkName);
             printWriter.flush();
-            System.out.println("baal");
-            int bytesRead = inputStream.read(storage, 0, (int)chunkSize);
+            //printWriter.flush();
+            //System.out.println("baal");
+            int bytesRead = inputStream.read(storage, 0, chunkSize);
             System.out.println("bytesRead "+bytesRead);
             if ( bytesRead > 0) // If bytes read is not empty
             {

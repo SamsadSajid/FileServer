@@ -2,6 +2,7 @@ package Server;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,7 @@ public class Worker implements Runnable{
     private int studentId = 0;
     private int receiverId;
     private String fileName;
-    private long fileSize;
+    private int fileSize;
     private String fileId;
     private String ipAddress;
     private int port;
@@ -149,7 +150,7 @@ public class Worker implements Runnable{
         byte[] storage = new byte[chunkSize];
         System.out.println("3");
         InputStream inputStream = new BufferedInputStream(new FileInputStream(fileName));
-        bytesRead = inputStream.read(storage, 0, chunkSize);
+        bytesRead = inputStream.read(storage);
         for(int i=0; i<storage.length; i++){
             System.out.println(storage[i]);
         }
@@ -162,20 +163,19 @@ public class Worker implements Runnable{
 
     private void write(String fileId, byte[] allContents, String fileChunkName) {
         try {
-            OutputStream outputStream = null;
+            BufferedOutputStream outputStream =  new BufferedOutputStream(new FileOutputStream(fileDestination + fileId + "_" + fileChunkName));;
             PrintWriter printWriter = new PrintWriter(this.os);
             try {
-                outputStream = new BufferedOutputStream(new FileOutputStream(fileDestination + fileId + "_" + fileChunkName));
                 //1-2_datapath.pptx_metadata_0.bin
                 outputStream.write(allContents);
+                outputStream.flush();
                 System.out.println("Writing Process Was Performed");
                 printWriter.println("Writing Process Was Performed");
                 printWriter.flush();
                 //printWriter.close();
             }
-            finally {
-                outputStream.flush();
-                //outputStream.close();
+            catch (FileNotFoundException fl){
+                fl.printStackTrace();
             }
         }
         catch(FileNotFoundException ex){
