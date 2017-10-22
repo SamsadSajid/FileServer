@@ -20,11 +20,11 @@ public class Worker implements Runnable{
     private String ipAddress;
     private int port;
     private static ArrayList<String> fileChunkList = new ArrayList<>();
-    private String fileDestination = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server\\";
+    private String fileDestination = "/home/shamsad/IdeaProjects/FileServer/out/production/filehsharing/Server/";
     private int chunkSize;
     private String fileChunkName;
     private int totalBytesRead = 0;
-
+    private int numberOfChunks = 0;
     private static Map<Integer, NetworkAddress> mapLog = new HashMap<Integer, NetworkAddress>();
 
     public Worker(Socket s, int id, Map<Integer, NetworkAddress> map)
@@ -87,14 +87,23 @@ public class Worker implements Runnable{
                 fileId = generateFileId(fileName, studentId, receiverId);
                 System.out.println("File name received " + fileName + " file size " + fileSize);
                 int p=0;
+                //int tot = 0;
+                String ss = bufferedReader.readLine();
+                chunkSize = Integer.valueOf(ss);
+                System.out.println(chunkSize);
+
                 while (totalBytesRead < fileSize) {
-                    String ss = bufferedReader.readLine();
-                    System.out.println("fucking reader "+ss);
-                    ss = ss.replaceAll("\\D+", "");
-                    System.out.println("Buffer reader in string after taking only int " + ss);
-                    chunkSize = Integer.valueOf(ss);
-                    System.out.println(chunkSize);
-                    fileChunkName = bufferedReader.readLine();
+                    if ( fileSize-totalBytesRead < chunkSize ){
+                        chunkSize = fileSize-totalBytesRead;
+                    }
+
+//                    System.out.println("fucking reader "+ss);
+//                    ss = ss.replaceAll("\\D+", "");
+//                    System.out.println("Buffer reader in string after taking only int " + ss);
+
+
+                    //fileChunkName = bufferedReader.readLine();
+                    fileChunkName="metadata_"+numberOfChunks+".bin";
                     System.out.println("Size " + chunkSize + " name " + fileChunkName);
                     fileChunkList.add(fileDestination+fileChunkName);
                     System.out.println(fileChunkList.get(p));
@@ -103,6 +112,7 @@ public class Worker implements Runnable{
                     p++;
                 }
                 response = bufferedReader.readLine();
+                System.out.println("last e resp"+response);
                 if (response.contains("File sent successfully")){
                     mergeFile(fileChunkList, fileId);
                 }
@@ -156,6 +166,7 @@ public class Worker implements Runnable{
         }
         System.out.println("File received "+bytesRead);
         totalBytesRead+=bytesRead;
+        numberOfChunks++;
         System.out.println("So far read " + totalBytesRead);
         write(fileId, storage, fileChunkName);
         //storage = null;
@@ -172,6 +183,7 @@ public class Worker implements Runnable{
                 System.out.println("Writing Process Was Performed");
                 printWriter.println("Writing Process Was Performed");
                 printWriter.flush();
+                System.out.println("write e "+fileChunkName);
                 //printWriter.close();
             }
             catch (FileNotFoundException fl){
@@ -190,7 +202,7 @@ public class Worker implements Runnable{
     private void mergeFile(ArrayList<String> fileChunkList, String fileId) {
         File[] file = new File[fileChunkList.size()];
         byte AllContents[] = null;
-        
+
         int FILE_NUMBER = fileChunkList.size();
         int FILE_LENGTH = 0;
         int CURRENT_LENGTH=0;
@@ -205,7 +217,7 @@ public class Worker implements Runnable{
         try {
             InputStream inputStream = null;
             AllContents= new byte[TOTAL_FILE_SIZE]; // Length of All Files, Total Size
-            
+
             for ( int num=0;num<FILE_NUMBER; num++)
             {
                 inputStream = new BufferedInputStream ( new FileInputStream( file[num] ));

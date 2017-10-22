@@ -30,8 +30,11 @@ public class Controller {
     private static BufferedReader bufferedReader = null;
     private static PrintWriter printWriter ;
 
-    private static String storageFolder = "C:\\Users\\User\\IdeaProjects\\FileServer\\out\\production\\filehsharing\\Server\\";
+    private static String storageFolder = "/home/shamsad/IdeaProjects/FileServer/out/production/filehsharing/Server/";
 
+    private String head = "00001111";
+    private String tail = "11110000";
+    private String frame;
 
     @FXML
     public void initialize() throws IOException {
@@ -81,7 +84,10 @@ public class Controller {
 
     public void SendOnClickListener(ActionEvent actionEvent) throws IOException {
         String fileName = tFileName.getText();
-        int fileSize = Integer.valueOf(tFileSize.getText());
+        //int fileSize = Integer.valueOf(tFileSize.getText())
+        File fil = new File(fileName);
+        int fileSize = (int) fil.length();
+        System.out.println("Client e fileSize "+fileSize);
         int receiverId = Integer.valueOf(tStudentId.getText());
         //System.out.println("1");
         //printWriter = new PrintWriter(socket.getOutputStream());
@@ -114,9 +120,12 @@ public class Controller {
         BufferedInputStream inputStream = new  BufferedInputStream(fileInputStream);
         //printWriter = new PrintWriter(socket.getOutputStream());
         byte [] storage = null;
+        // byte [] tmp = null;
         int numberOfChunks = 0;
         int totalBytesRead = 0;
         ArrayList<String> fileChunkList = new ArrayList<>();
+        printWriter.println(chunkSize);
+        printWriter.flush();
 
         while(totalBytesRead < fileSize){
             String fileChunkName ="metadata_"+numberOfChunks+".bin";
@@ -125,16 +134,22 @@ public class Controller {
                 chunkSize = bytesRemaining;
             }
             storage = new byte[chunkSize]; //Temporary Byte Array
+            // tmp = new byte[chunkSize];
             System.out.println("From Client, chunk size "+chunkSize+" chunk name "+fileChunkName);
             //printWriter.flush();
-            printWriter.println(chunkSize);
+
             //printWriter.flush();
-            printWriter.println(fileChunkName);
-            printWriter.flush();
+            //printWriter.println(fileChunkName);
+            //printWriter.flush();
             //printWriter.flush();
             //System.out.println("baal");
             int bytesRead = inputStream.read(storage, 0, chunkSize);
             System.out.println("bytesRead "+bytesRead);
+            for(byte b: storage){
+                System.out.println("... "+Integer.toBinaryString(b &255 | 256).substring(1));
+                // tmp
+            }
+
             if ( bytesRead > 0) // If bytes read is not empty
             {
                 totalBytesRead += bytesRead;
@@ -171,6 +186,7 @@ public class Controller {
         outputStream.flush();
 
         //fileChunkList might return to somebody???
+        System.out.println("File sent successfully");
         printWriter.println("File sent successfully");
         printWriter.flush();
 

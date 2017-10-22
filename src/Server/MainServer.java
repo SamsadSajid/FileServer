@@ -59,8 +59,8 @@ public class MainServer {
                     Thread t = new Thread(wt);
                     t.start();
                 }
-                    //printWriter.println("Access Denied to the Server. Connection Terminating... .... ....");
-                    //printWriter.flush();
+                //printWriter.println("Access Denied to the Server. Connection Terminating... .... ....");
+                //printWriter.flush();
 //                WorkerCount++;
 //                System.out.println("Client [" + id + "] is now connected. No. of worker threads = " + WorkerCount);
 
