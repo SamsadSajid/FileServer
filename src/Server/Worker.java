@@ -3,14 +3,21 @@ package Server;
 import java.io.*;
 import java.net.Socket;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Worker implements Runnable{
     private Socket socket;
-    private InputStream is;
+    private InputStream is = null;
     private OutputStream os;
+    private BufferedReader bufferedReader;
+    private static BufferedInputStream bufferedInputStream = null;
+    private PrintWriter printWriter;
 
     private int studentId = 0;
     private int receiverId;
@@ -26,6 +33,14 @@ public class Worker implements Runnable{
     private int totalBytesRead = 0;
     private int numberOfChunks = 0;
     private static Map<Integer, NetworkAddress> mapLog = new HashMap<Integer, NetworkAddress>();
+
+    private String head ="";
+    private String tail ="";
+    private String frame ="";
+    private String sequenceNumber = "";
+    private String payload = "";
+    private String checkSum = "";
+    private static int framelength;
 
     public Worker(Socket s, int id, Map<Integer, NetworkAddress> map)
     {
@@ -59,8 +74,8 @@ public class Worker implements Runnable{
 
     public void run()
     {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(this.is));
-        PrintWriter printWriter = new PrintWriter(this.os);
+        bufferedReader = new BufferedReader(new InputStreamReader(this.is));
+        printWriter = new PrintWriter(this.os);
 
         printWriter.println("Welcome " + this.studentId + " with IP Address " + this.ipAddress + " on Port " +this.port);
         printWriter.flush();
@@ -88,7 +103,8 @@ public class Worker implements Runnable{
                 System.out.println("File name received " + fileName + " file size " + fileSize);
                 int p=0;
                 //int tot = 0;
-                String ss = bufferedReader.readLine();
+                String ss;
+                ss = bufferedReader.readLine();
                 chunkSize = Integer.valueOf(ss);
                 System.out.println(chunkSize);
 
@@ -105,6 +121,11 @@ public class Worker implements Runnable{
                     //fileChunkName = bufferedReader.readLine();
                     fileChunkName="metadata_"+numberOfChunks+".bin";
                     System.out.println("Size " + chunkSize + " name " + fileChunkName);
+//                    checkSum = bufferedReader.readLine();
+//                    checkSum = checkSum.replaceAll("\\D+", "");
+//                    System.out.println("server checksum "+checkSum);
+                    framelength = Integer.valueOf(bufferedReader.readLine());
+                    System.out.println("server e frame length "+ framelength);
                     fileChunkList.add(fileDestination+fileChunkName);
                     System.out.println(fileChunkList.get(p));
                     System.out.println("call hoise");
@@ -154,21 +175,92 @@ public class Worker implements Runnable{
     }
 
     private void receiveFile(String fileId, int chunkSize, String fileChunkName) throws IOException {
-        System.out.println("1");
+        head="";
+        sequenceNumber="";
+        checkSum="";
+        payload="";
+        tail="";
+        System.out.println("echo 1");
         int bytesRead;
-        System.out.println("2");
-        byte[] storage = new byte[chunkSize];
-        System.out.println("3");
-        InputStream inputStream = new BufferedInputStream(new FileInputStream(fileName));
-        bytesRead = inputStream.read(storage);
-        for(int i=0; i<storage.length; i++){
-            System.out.println(storage[i]);
+        System.out.println("echo 2");
+
+        System.out.println("echo 3");
+//          InputStream inputStream = socket.getInputStream();
+        // framelength /= 8;
+//        byte[] storage = new byte[framelength];
+        char[] storage = new char[framelength];
+        bytesRead = bufferedReader.read(storage, 0, framelength);
+//          bytesRead = is.read(storage, 0, framelength);
+//        bytesRead = inputStream.read(storage,0, framelength);
+//        for(int i=0; i<storage.length; i++){
+//            System.out.println(storage[i]);
+//        }
+        String frame = "";
+//        for(byte b: storage){
+//            // System.out.println("b "+ b +"... "+Integer.toBinaryString(b &255 | 256).substring(1));
+//            // tmp
+//            frame += Integer.toBinaryString(b &255 | 256).substring(1);
+//            // System.out.println("payload is "+frame);
+//        }
+//        for (int j=0; j< storage.length; j++){
+//            System.out.println("byte me lust "+storage[j]);
+//            frame += storage[j];
+//            if(j>=0 && j<8){
+//                head+=storage[j];
+//            }
+//            else if(j>=8 && j<16){
+//                sequenceNumber+=storage[j];
+//            }
+//        }
+        for (int j=0;j<8;j++){
+            head+=storage[j];
         }
+        System.out.println("head is "+head);
+        for (int j=8; j<16;j++){
+            sequenceNumber+=storage[j];
+        }
+        System.out.println("sequencenumber is "+sequenceNumber);
+
+//        for (int j=storage.length -1; j>=0; j--){
+//            if(j<=storage.length-1 && j>=storage.length -8){
+//                System.out.println(j);
+//                tail+=storage[j];
+//            }
+//            else if(j<=storage.length-9 && j>=storage.length-16){
+//                System.out.println(j);
+//                checkSum+=storage[j];
+//            }
+//        }
+        for (int j=storage.length -1; j>=storage.length-8;j--){
+            tail+=storage[j];
+        }
+        System.out.println("tail is "+tail);
+        for (int j=storage.length -16; j<=storage.length-9;j++){
+            checkSum+=storage[j];
+        }
+        System.out.println("checksum is "+checkSum);
+
+        int track1 = head.length()+sequenceNumber.length();
+        int track2 = checkSum.length()+tail.length();
+
+        for (int j=track1; j<storage.length-track2; j++){
+            payload+=storage[j];
+        }
+
+        System.out.println("pyload is "+payload);
+        bytesRead = payload.length()/8;
+
         System.out.println("File received "+bytesRead);
         totalBytesRead+=bytesRead;
         numberOfChunks++;
         System.out.println("So far read " + totalBytesRead);
-        write(fileId, storage, fileChunkName);
+        CharBuffer charBuffer = CharBuffer.wrap(storage);
+        ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(charBuffer);
+        byte[] bytes = Arrays.copyOfRange(byteBuffer.array(),
+                byteBuffer.position(), byteBuffer.limit());
+        Arrays.fill(charBuffer.array(), '\u0000'); // clear sensitive data
+        Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
+        write(fileId, bytes, fileChunkName);
         //storage = null;
     }
 

@@ -32,9 +32,13 @@ public class Controller {
 
     private static String storageFolder = "/home/shamsad/IdeaProjects/FileServer/out/production/filehsharing/Server/";
 
-    private String head = "00001111";
-    private String tail = "11110000";
+    private String head = "01111110";
+    private String tail = "01111110";
     private String frame;
+    private String sequenceNumber = "";
+    private String payload = "";
+    private String checkSum = "";
+    private int frameLength;
 
     @FXML
     public void initialize() throws IOException {
@@ -96,7 +100,7 @@ public class Controller {
         printWriter.println(fileSize);
         //System.out.println("2");
         printWriter.flush();
-        int chunkSize = 100; //will come from server
+        int chunkSize = 32; //will come from server
         //System.out.println("3");
         String feed = bufferedReader.readLine();
         System.out.println(feed);
@@ -129,6 +133,9 @@ public class Controller {
 
         while(totalBytesRead < fileSize){
             String fileChunkName ="metadata_"+numberOfChunks+".bin";
+            sequenceNumber = Integer.toBinaryString(numberOfChunks &255 | 256).substring(1);
+            payload = "";
+            System.out.println("sequence number "+sequenceNumber);
             int bytesRemaining = fileSize - totalBytesRead;
             if ( bytesRemaining < chunkSize ){
                 chunkSize = bytesRemaining;
@@ -146,9 +153,60 @@ public class Controller {
             int bytesRead = inputStream.read(storage, 0, chunkSize);
             System.out.println("bytesRead "+bytesRead);
             for(byte b: storage){
-                System.out.println("... "+Integer.toBinaryString(b &255 | 256).substring(1));
+                // System.out.println("b "+ b +"... "+Integer.toBinaryString(b &255 | 256).substring(1));
                 // tmp
+                payload += Integer.toBinaryString(b &255 | 256).substring(1);
+                System.out.println("payload is "+payload);
             }
+
+            System.out.println("length of payload "+payload.length());
+            System.out.println("before payload "+payload);
+            int ones = payload.length() - payload.replaceAll("1", "").length();
+            System.out.println("After payload  "+payload);
+            System.out.println("num of 1 "+ones);
+
+            checkSum = Integer.toBinaryString((ones) &255 | 256).substring(1);
+            System.out.println("checksum "+checkSum);
+
+//            printWriter.println(checkSum);
+//            printWriter.flush();
+
+            String body = sequenceNumber + payload + checkSum;
+            String match = "11111";
+            int firstIndex = body.indexOf(match);
+            if(firstIndex == -1){
+                System.out.println("No consecutive 5 ones in frame.");
+            }
+            else{
+                body = body.substring(0, firstIndex+5)+"0"+body.substring(firstIndex+5, body.length());
+            }
+            frame = head + body + tail;
+            System.out.println("frame is "+frame);
+            frameLength = frame.length();
+            int sendLength = frameLength / 8;
+
+            printWriter.println(frameLength);
+            printWriter.flush();
+
+            System.out.println("frame length "+frameLength);
+            System.out.println("send len "+ sendLength);
+
+            byte [] byteArr = frame.getBytes();
+
+            System.out.println("byte array length "+byteArr.length);
+            String yoo="";
+//            for(byte b: byteArr){
+//                // System.out.println("b "+ b +"... "+Integer.toBinaryString(b &255 | 256).substring(1));
+//                // tmp
+//                yoo += Integer.toBinaryString(b &255 | 256).substring(1);
+//                // System.out.println("payload is "+frame);
+//            }
+            for(int j=0; j<byteArr.length; j++){
+                System.out.println("byte me "+byteArr[j]);
+            }
+            // System.out.println("yoo is "+yoo);
+
+            //byte[] clientStorage = new byte[sendLength];
 
             if ( bytesRead > 0) // If bytes read is not empty
             {
@@ -157,10 +215,15 @@ public class Controller {
                 System.out.println("Number of Chunks "+numberOfChunks);
             }
 
+//            for(int j=0; j < sendLength; j++){
+//                for (int )
+//            }
+
             //printWriter.println(numberOfChunks);
             //printWriter.flush();
 
-            outputStream.write(storage);
+            // outputStream.write(storage);
+            outputStream.write(byteArr);
             outputStream.flush();
 
             for(int i=0; i<storage.length; i++) {
